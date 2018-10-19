@@ -7,13 +7,19 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QWidget
+from PyQt5 import QtTest
+from arvpyf import mgmt, cf
+from arvpyf.mgmt import ArchiverConfig
+from arvpyf.cf import PVFinder
+import json
 
 class TextStream(QtCore.QObject):
     text = QtCore.pyqtSignal(str)
     def write(self, s):
         self.text.emit(str(s))
 
-class Ui_MainWindow(object):
+class Ui_MainWindow(QWidget):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -68,11 +74,13 @@ class Ui_MainWindow(object):
 
         sys.stdout = TextStream(text=self.outputText)
         self.pushButton.clicked.connect(self.listPVs)
+        self.pushButton_2.clicked.connect(self.validate)
+        self.textEdit.setReadOnly(True)
         
         
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "PV Archiver"))
         self.label.setText(_translate("MainWindow", "Archiver URL"))
         self.label_2.setText(_translate("MainWindow", "PV Regex"))
         self.pushButton.setText(_translate("MainWindow", "List PVs"))
@@ -87,28 +95,62 @@ class Ui_MainWindow(object):
         self.textEdit.setTextCursor(cursor)
         self.textEdit.ensureCursorVisible()
 
-    def listPVs(self):
-        from arvpyf import mgmt, cf
-        from arvpyf.mgmt import ArchiverConfig
-        from arvpyf.cf import PVFinder
+
+    def validate(self):
+        msg = QtWidgets.QMessageBox
+        resp = msg.question(self, '', 'Are you sure you wish to delete these PVs from the archive??', msg.Yes | msg.No)
+        if resp == msg.Yes:
+            self.deletePVs()
         
+    def listPVs(self):
+        self.textEdit.setPlainText("")
         url = self.lineEdit.text()
         reg = self.lineEdit_2.text()
         if url == "" or reg == "":
-            print("Arguments required: (1) URL for webapp and (2) prefix for PVs to list")
+            print("Arguments required: (1) URL for webapp and (2) regex for PVs to list")
             return
         print("webapp URL: " + url)
-        print("PV prefix: " + reg)
+        print("PV regex: " + reg + "\n")
        
         arvconf = ArchiverConfig(url)
-    
-        pvs = arvconf.get_all_pvs(regex=reg)
-
+        pvs = arvconf.get_all_pvs(regex=reg, limit=30000)
+        if len(pvs) == 0:
+            print("No PVs matched the regex.")
+            return
         for pv in pvs:
             print(pv)
-            
+        print("\n" + str(len(pvs)) + " PVs matched.")
 
+    def deletePVs(self):
+        self.textEdit.setPlainText("")
+        print("\t\t-----DELETING PVs-----\n")
+        url = self.lineEdit.text()
+        reg = self.lineEdit_2.text()
+        if url == "" or reg == "":
+            print("Arguments required: (1) URL for webapp and (2) regex for PVs to list")
+            return
+        print("webapp URL: " + url)
+        print("PV regex: " + reg + "\n")
         
+        arvconf = ArchiverConfig(url)
+        pvs = arvconf.get_all_pvs(regex=reg, limit=30000)
+        if len(pvs) == 0:
+            print("No PVs matched the regex.")
+            return
+        for pv in pvs:
+            print(pv)
+        paused_pvs = arvconf.pause_archiving_pvs(pvs)
+        print(str(len(pvs)) + " PVs paused.")
+        print("waiting 30 seconds before deleting...")
+
+        QtTest.QTest.qWait(30000)
+
+        for i, pv in enumerate(pvs):
+            resp = arvconf.delete_pv(pv, deleteData=True)
+            print(json.dumps(resp))
+
+        print("\nOperation complete.")
+
 
 if __name__ == "__main__":
     import sys
