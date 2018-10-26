@@ -202,8 +202,6 @@ class Ui_MainWindow(QWidget):
         self.label_6.setText(_translate("MainWindow", "Method"))
         self.urlLine.setText(_translate("MainWindow", "http://xf10id-ca1.cs.nsls2.local:17665/mgmt/bpl"))
 
-        self.regexLine.setText(_translate("MainWindow", "*IOC-MC:1}*"))
-
 
     def outputText(self, text):
         cursor = self.textEdit.textCursor()
