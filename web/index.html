@@ -1,0 +1,21 @@
+<html>
+<head>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script>
+		$.ajax({
+			url: ""
+		})
+		$(document).ready(function() {
+			$("#test").click(function() {
+				$.get("http://xf10id-ca1.cs.nsls2.local:17665/mgmt/bpl/getAppliancesInCluster", function(data) {
+					alert("Data: " + data);
+				});
+			});
+		});
+	</script>
+</head>
+<body>
+	<h1> Hello World </h1>
+	<input type="button" value="click me" id="test">
+</body>
+</html>
