@@ -230,6 +230,7 @@ class Ui_MainWindow(QWidget):
 
         self.dataStoreButton.clicked.connect(self.getDataStores)
         self.applianceInfoButton.clicked.connect(self.getApplianceInfo)
+        self.activeAppliancesButton.clicked.connect(self.getActiveAppliances)
 
         self.hlFormat = QtGui.QTextCharFormat()
         self.hlFormat.setBackground(QtGui.QBrush(QtGui.QColor("yellow")))
@@ -482,6 +483,17 @@ class Ui_MainWindow(QWidget):
     ############################
     ### non-arvpyf functions ###
     ############################
+
+    def getRespJSON(self, service, params):
+        url = self.urlLine.text()
+        if url == '':
+            return None
+        req_url = url + service
+        if params is not None:
+            req = requests.get(req_url, params=params, stream=True)
+        else:
+            req = requests.get(req_url, stream=True)
+        return req.json()
     
     def getDataStores(self):
         arvconf, pvs = self.validate(True)
@@ -493,28 +505,38 @@ class Ui_MainWindow(QWidget):
         params = {'pv' : pv}
         req = requests.get(req_url, params=params, stream=True)
         result = req.json()
-        print(json.dumps(result) + "\n")
+        print(json.dumps(result))
 
 
     def getApplianceInfo(self):
-        url = self.urlLine.text()
-        if url == "":
-            return
+        self.textEdit.setPlainText("")
         text = self.comboBox_2.currentText()
+        '''
         if "Long" in text:
             appl = "LTS"
         if "Medium" in text:
             appl = "MTS"
         else:
             appl = "STS"
-        req_url = url + "/getApplianceInfo"
         params = {'id' : appl}
-        req = requests.get(req_url, params=params, stream=True)
-        result = req.text
+        '''
+        result = self.getRespJSON('/getApplianceInfo', None)
+        if result is None:
+            return
+        #self.textEdit.setPlainText("")
+        #self.textEdit.setHtml(result)
+        print("appliance ID: " + result['identity'] + "\n")
+        self.printJSON(result)
+
+
+    def getActiveAppliances(self):
         self.textEdit.setPlainText("")
-        self.textEdit.setHtml(result)
-        
-        
+        result = self.getRespJSON('/getAppliancesInCluster', None)
+        if result is None:
+            return
+        for json in result:
+            print("appliance ID: " + json['identity'] + "\n")
+            self.printJSON(json)
             
         
 if __name__ == "__main__":
