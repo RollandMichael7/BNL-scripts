@@ -246,8 +246,8 @@ class Ui_MainWindow(QWidget):
         self.saveButton.setText(_translate("MainWindow", "Save output to file"))
         self.label_4.setText(_translate("MainWindow", "Archiving Paramters"))
         self.label_5.setText(_translate("MainWindow", "Period (seconds)"))
-        self.comboBox.setItemText(0, _translate("MainWindow", "SCAN"))
-        self.comboBox.setItemText(1, _translate("MainWindow", "MONITOR"))
+        self.comboBox.setItemText(0, _translate("MainWindow", "MONITOR"))
+        self.comboBox.setItemText(1, _translate("MainWindow", "SCAN"))
         self.label_6.setText(_translate("MainWindow", "Method"))
         self.listButton.setText(_translate("MainWindow", "List PVs"))
         self.archiveButton.setText(_translate("MainWindow", "Archive PVs"))
@@ -274,7 +274,7 @@ class Ui_MainWindow(QWidget):
         self.getAppliancePVsButton.setText(_translate("MainWindow", "Get PVs for Appliance"))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab_2), _translate("MainWindow", "additional functions"))
         self.urlLine.setText(_translate("MainWindow", "http://xf10id-ca1.cs.nsls2.local:17665/mgmt/bpl"))
-
+        self.doubleSpinBox.setValue(1)
 
     def outputText(self, text):
         cursor = self.textEdit.textCursor()
@@ -332,7 +332,7 @@ class Ui_MainWindow(QWidget):
                 print("Arguments required: (1) URL for webapp and (2) regular expression for matching PV names")
             else:
                 print("Argument required: (1) URL for webapp")
-            return None
+            return None, None
         print("webapp URL: " + url)
         arvconf = ArchiverConfig(url)
         if needsRegex:
@@ -342,7 +342,7 @@ class Ui_MainWindow(QWidget):
             pvs = [0]
         if len(pvs) == 0 and needsRegex:
             print("No PVs matched the regex.")
-            return None
+            return arvconf, None
         return arvconf, pvs
 
     
@@ -354,7 +354,7 @@ class Ui_MainWindow(QWidget):
 
     def listPVs(self):
         arvconf, pvs = self.validate(True)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         for pv in pvs:
             print(pv)
@@ -363,7 +363,7 @@ class Ui_MainWindow(QWidget):
 
     def statPVs(self):
         arvconf, pvs = self.validate(True)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         results = arvconf.get_pv_status(pvs=pvs)
         for json in results:
@@ -373,7 +373,7 @@ class Ui_MainWindow(QWidget):
     
     def typeInfoPVs(self):
         arvconf, pvs = self.validate(True)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         for pv in pvs:
             json = arvconf.get_pv_type_info(pv)
@@ -384,7 +384,7 @@ class Ui_MainWindow(QWidget):
 
     def neverConnectedPVs(self):
         arvconf, pvs = self.validate(False)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         results = arvconf.get_never_connected_pvs()
         for json in results:
@@ -395,7 +395,7 @@ class Ui_MainWindow(QWidget):
         
     def detailPVs(self):
         arvconf, pvs = self.validate(True)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         for pv in pvs:
             jsons = arvconf.get_pv_details(pv)
@@ -410,7 +410,7 @@ class Ui_MainWindow(QWidget):
 
     def getPausedPVs(self):
         arvconf, pvs = self.validate(False)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         paused = arvconf.get_paused_pvs_report()
         for pv in paused:
@@ -421,25 +421,39 @@ class Ui_MainWindow(QWidget):
 
     def archivePVs(self):
         arvconf, pvs = self.validate(True)
+        noMatch = False
         if arvconf is None:
-            return
+        	return 
+        if pvs is None:
+            pvs = self.regexLine.text()
+            print("Attempting to archive " + pvs + "\n")
+            noMatch = True
         method = str(self.comboBox.currentText())
         period = self.doubleSpinBox.value()
         msg = QtWidgets.QMessageBox
-        resp = msg.question(self, 'Archive PVs', 'You are attempting to archive ' + str(len(pvs)) + ' PVs.\n\n' +
+        if noMatch:
+        	length = 1
+        else:
+        	length = len(pvs)
+        resp = msg.question(self, 'Archive PVs', 'You are attempting to archive ' + str(length) + ' PVs.\n\n' +
                 'The archive parameters are:\n PERIOD: ' + str(period) + ' second(s) \n ' +
                 'METHOD: ' + method + ' \n POLICY: "Default" \n\n Use these parameters?', msg.Yes | msg.No)
         if resp == msg.No:
             print("Operation aborted.")
             return
-        results = arvconf.archive_pvs(pvnames=pvs, method=method, period=period)
-        for json in results:
-            self.printJSON(json)
+        if noMatch:
+        	params = {'pv' : pvs, 'samplingperiod' : period, 'samplingmethod' : method}
+        	result = self.getRespJSON('/archivePV', params)
+        	print(result)
+        else:
+	        results = arvconf.archive_pvs(pvnames=pvs, method=method, period=period)
+	        for j in results:
+	            self.printJSON(j)
 
             
     def pausePVs(self):
         arvconf, pvs = self.validate(True)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         msg = QtWidgets.QMessageBox
         resp = msg.question(self, 'Pause PVs', "You are attempting to pause " + str(len(pvs)) + "PVs. Continue?")
@@ -455,7 +469,7 @@ class Ui_MainWindow(QWidget):
 
     def resumePVs(self):
         arvconf, pvs = self.validate(True)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         results = arvconf.resume_archiving_pvs(pvs)
         n = len(results)
@@ -468,7 +482,7 @@ class Ui_MainWindow(QWidget):
 
     def abortPVs(self):
         arvconf, pvs = self.validate(True)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         msg = QtWidgets.QMessageBox
         resp = msg.question(self, 'Abort PVs', "You are attempting to abort archiving " + str(len(pvs)) + "PVs. Continue?")
@@ -497,7 +511,7 @@ class Ui_MainWindow(QWidget):
     
     def getDataStores(self):
         arvconf, pvs = self.validate(True)
-        if arvconf is None:
+        if arvconf is None or pvs is None:
             return
         url = self.urlLine.text()
         pv = pvs[0]
