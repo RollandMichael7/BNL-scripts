@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title> appliance archiver - Tools </title>
+	<!-- @begin(main_includes) -->
+	<script type="text/javascript" src="comm/js/jquery-1.8.2.min.js"></script>
+	<link type="text/css" href="comm/js/jquery-ui-1.9.1.custom/css/cupertino/jquery-ui-1.9.1.custom.css" rel="Stylesheet" />	
+	<script type="text/javascript" src="comm/js/jquery-ui-1.9.1.custom/js/jquery-ui-1.9.1.custom.min.js"></script>
+	<link type="text/css" href="comm/css/main.css" rel="Stylesheet" />	
+	<script type="text/javascript" src="comm/js/common.js"></script>
+	<!-- @end(main_includes) -->
+	<link type="text/css" href="css/mgmt.css" rel="Stylesheet" />	
+	<!-- Functions for buttons -->	
+	<script type="text/javascript" src="js/delete.js"> </script>
+	<style>
+		#outputArea {
+			width: 70em;
+			height: 30em;
+			overflow: auto;
+			outline: .1em solid black;
+			margin: 1em;
+			pading: 20px 0px;
+		}
+		.inputDiv {
+			display: inline-block; 
+			text-align: center;
+		}
+		.highlight {
+			background-color: yellow;
+		}
+		.PVName {
+			background-color: blue;
+		}
+		.good {
+			background-color: LawnGreen;
+		}
+		.bad {
+			background-color: red;
+		}
+		th {
+			background-color: #99cedb;
+			font-weight: bold;
+			border: thin solid black;
+			padding: .25em;
+		}
+		th, td {
+			padding-right: 1.5em;
+			text-align: left;
+		}
+	</style>
+</head>
+<body>
+	<div class="pageheader">
+		<span class="apptitle" id="archiveInstallationTitle">EPICS Archiver Appliance for IXS</span>
+		<span id="siteimages"><img src="/mgmt/ui/comm/img/NSLS2logo.png" width="243px" height="50px"></img></span>
+	</div>
+	<!-- @begin(site_navbar) -->
+	<div class="navbar">
+		<div class="nav">
+			<ul class="mainmenu">
+				<li><a href="index.html">Home</a></li>
+				<li><a href="reports.html">Reports</a></li>
+				<li><a href="metrics.html">Metrics</a></li>
+				<li><a href="storage.html">Storage</a></li>
+				<li><a href="appliance.html">Appliances</a></li>
+				<li><a href="integration.html">Integration</a></li>
+				<li><a href="helloworld.html">Advanced</a></li>
+				<li><a href="#" id="help">Help</a></li>
+			</ul>
+		</div>
+	</div>
+	<!-- @end(site_navbar) -->
+	<div class="page">
+		<div id="archivehelpdesk">
+			<!-- @begin(site_contact_text) -->
+			This page is for mass deletion of archived PVs. If you have any questions,
+			please contact Kazimierz Gofron or Michael Rolland.
+			<!-- @end(site_contact_text) -->
+		</div>
+		<div id="archivePVDiv">
+			Enter a regular expression matching PV names here:
+			<input type="text" id="regex">
+			<br />
+			<br />
+			<div style="text-align: center"
+			<div class="inputDiv">
+				<input type="button" value="List Matching PVs" onclick="listPVs()" style="margin: 1em;"></input> 
+				<input type="button" value="Pause Matching PVs" onclick="pausePVs()" style="margin: 1em;"></input> 
+				<input type="button" value="Get Paused PVs" onclick="pauseReport()" style="margin: 1em;"></input> 
+			</div>
+			<br />
+			<div class="inputDiv">
+				Delete method: 
+				<select id="deleteType">
+					<option value="stop">Stop archiving</option>
+					<option value="delete">Delete all data</option>
+				</select>
+				<input type="button" value="Delete Matching PVs" onclick="deletePVHandler()" style="margin: 1em;"></input> 
+			</div>
+			<p id="deleteText"> </p>
+			<br />
+			<div id="outputArea">
+				<pre>
+				<p id="output"> </p>
+				</pre>
+			</div>
+			<div id="outputTable">
+			</div>
+			<br />
+		</div>
+	</body>
+	</html>
