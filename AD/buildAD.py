@@ -23,7 +23,7 @@ ad_dependents = [ "quadEM", "dxp", "dxpSITORO" ]
 
 # subprocess.run takes a list of arguments
 def run(command):
-	subprocess.run(command.split())
+	subprocess.call(command.split())
 
 # ensure dependencies
 # run("sudo apt install libreadline-dev")
