@@ -1,4 +1,4 @@
-# This script downloads and compiles EPICS base, EPICS modules, and AreaDetector as a synApps package
+# This script downloads, compiles and sets up EPICS base, EPICS modules, and AreaDetector as a synApps package
 #
 # Author: Michael Rolland
 # Copyright (c): Brookhaven National Laboratory
@@ -21,7 +21,7 @@ epics_modules = [
 # EPICS modules that require areaDetector to be compiled first
 ad_dependents = [ "quadEM", "dxp", "dxpSITORO" ]
 
-# subprocess.run takes a list of arguments
+# subprocess.call takes a list of arguments
 def run(command):
 	subprocess.call(command.split())
 
@@ -114,7 +114,7 @@ for config in config_files:
 				print("AREA_DETECTOR=$(SUPPORT)/areaDetector")
 			elif "EPICS_BASE=" in line:
 				print("EPICS_BASE="+wd+"/epics-base-7-0-1-1")
-			elif "SUPPORT=" in line:
+			elif "SUPPORT=" in line and "ADSUPPORT" not in line:
 				print("SUPPORT="+wd+"/support")
 			elif "DEVIOCSTATS=" in line:
 				print("DEVIOCSTATS=$(SUPPORT)/iocStats")
@@ -123,6 +123,11 @@ for config in config_files:
 			else:
 				print(line, end="")
 
+# setup commonPlugins
+run("cp /support/areaDetector/ADCore/iocBoot/EXAMPLE_commonPlugins.cmd /support/areaDetector/ADCore/iocBoot/commonPlugins.cmd")
+run("cp /support/areaDetector/ADCore/iocBoot/EXAMPLE_commonPlugin_settings.req /support/areaDetector/ADCore/iocBoot/commonPlugin_settings.req")
+
 # compile
 run("make -C support/areaDetector/ADSupport -sj")
 run("make -C support/areaDetector/ADCore -sj")
+#run("make -C support/areaDetector/ADProsilica -sj")
