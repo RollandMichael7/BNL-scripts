@@ -27,7 +27,7 @@
 
 """\
     
-    XBee server for sending sensor data when requested
+    XBee server for sending L/T/H sensor data when requested
     
 """
 
@@ -52,25 +52,34 @@ UDPSock.bind(addr)
 while True:
 
     # wait for someone to request data
-    #print("waiting for transmission...")
     (data, addr) = UDPSock.recvfrom(recvSize)
     data = data.decode('utf-8')
-    #print("TRANSMISSION: " + data)
-
-    # (do something with request) #
+    # ignore bad request
+    if len(data) != 2:
+        continue
+    dataType = data[0]
+    try:
+        sensorNum = int(data[1])
+    except ValueError:
+        continue 
+    if sensorNum >= len(sensors):
+        continue   
 
     # Retrieve data from sensors
     sendBuf = ""
     samples = [sensor.sample() for sensor in sensors]
-    for i in range(len(samples)):
-    	# add 1 to index for human readability
-        sendBuf += "L" + str(i+1) + "=" + str(samples[i]['light']) + "\n"
-        sendBuf += "T" + str(i+1) + "=" + str(samples[i]['temperature']) + "\n"
-        sendBuf += "H" + str(i+1) + "=" + str(samples[i]['humidity']) + "\n"
 
-    # send data
-    #print("sending transmission...")
-    targetAddr = (addr[0], 13000)
-    UDPSock.sendto(sendBuf, targetAddr)
+    # Get only the requested data     
+    sendData = '*'
+    if dataType == 'L':
+        sendData = samples[sensorNum]['light']
+    elif dataType == 'T':
+        sendData = samples[sensorNum]['temperature']
+    elif dataType == 'H':
+        sendData = samples[sensorNum]['humidity']
+
+    # send data if it was a valid request
+    if sendData != '*':
+        targetAddr = (addr[0], 13000)
+        UDPSock.sendto(str(sendData), targetAddr)
     
-    #time.sleep(3)

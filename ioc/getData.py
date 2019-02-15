@@ -17,9 +17,9 @@ def sendLoop():
 	UDPSock = socket(AF_INET, SOCK_DGRAM)
 	addr= ("10.10.192.18", 13000)
 	while True:
-		print("Requesting data...")
-		UDPSock.sendto(str.encode("gimme data"), addr)
-		time.sleep(10)
+		data = input("Enter data to send: ")
+		UDPSock.sendto(str.encode(data), addr)
+		time.sleep(5)
 
 threading.Thread(target=sendLoop).start()
 recvLoop()
