@@ -54,29 +54,24 @@ while True:
     # wait for someone to request data
     (data, addr) = UDPSock.recvfrom(recvSize)
     data = data.decode('utf-8')
-    # ignore bad request
-    if len(data) != 2:
-        continue
+
+    # check for bad requests
     dataType = data[0]
     try:
-        sensorNum = int(data[1])
+        sensorNum = int(data[1:])
     except ValueError:
         continue 
     if sensorNum >= len(sensors):
         continue   
 
-    # Retrieve data from sensors
-    sendBuf = ""
-    samples = [sensor.sample() for sensor in sensors]
-
     # Get only the requested data     
     sendData = '*'
     if dataType == 'L':
-        sendData = samples[sensorNum]['light']
+        sendData = sensors[sensorNum].sample()['light']
     elif dataType == 'T':
-        sendData = samples[sensorNum]['temperature']
+        sendData = sensors[sensorNum].sample()['temperature']
     elif dataType == 'H':
-        sendData = samples[sensorNum]['humidity']
+        sendData = sensors[sensorNum].sample()['humidity']
 
     # send data if it was a valid request
     if sendData != '*':
