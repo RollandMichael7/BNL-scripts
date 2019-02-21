@@ -44,37 +44,58 @@ sensor_addresses = ["[00:13:a2:00:41:63:87:88]!",
 sensors = [xbeelib.xbeelt.XBeeLTN(addr) for addr in sensor_addresses]
 
 # Setup socket
-recvSize = 1024
-addr = ("", 13000)
-UDPSock = socket(AF_INET, SOCK_DGRAM)
-UDPSock.bind(addr)
+host = ''
+port = 13000
+TCPSock = socket(AF_INET, SOCK_STREAM)
+TCPSock.bind((host, port))
 
+connected = False
 while True:
-
-    # wait for someone to request data
-    (data, addr) = UDPSock.recvfrom(recvSize)
-    data = data.decode('utf-8')
-
-    # check for bad requests
-    dataType = data[0]
+    if not connected:
+        TCPSock.listen(1)
+        conn, addr = TCPSock.accept()
+        #print('Connected to ' + str(addr))
+        connected = True
     try:
-        sensorNum = int(data[1:])
-    except ValueError:
-        continue 
-    if sensorNum >= len(sensors):
-        continue   
+        # wait for someone to request data
+        data = conn.recv(1024)
+        data = data.decode('utf-8')
+        #print('Received ' + data)
+    except error:
+        #print "Error Occured."
+        break
 
-    # Get only the requested data     
-    sendData = '*'
-    if dataType == 'L':
-        sendData = sensors[sensorNum].sample()['light']
-    elif dataType == 'T':
-        sendData = sensors[sensorNum].sample()['temperature']
-    elif dataType == 'H':
-        sendData = sensors[sensorNum].sample()['humidity']
+    # if we receive nothing, terminate the connection
+    if data == "":
+            #print('Disconnecting from ' + str(addr))
+            connected = False
+            conn.close()
+    elif len(data) > 1:
+        # check for bad requests
+        dataType = data[0]
+        try:
+            sensorNum = int(data[1:])
+        except ValueError:
+            continue 
+        if sensorNum >= len(sensors):
+            continue   
 
-    # send data if it was a valid request
-    if sendData != '*':
-        targetAddr = (addr[0], 13000)
-        UDPSock.sendto(str(sendData), targetAddr)
-    
+        # Get only the requested data     
+        sendData = '*'
+        if dataType == 'L':
+            sendData = sensors[sensorNum].sample()['light']
+        elif dataType == 'T':
+            sendData = sensors[sensorNum].sample()['temperature']
+        elif dataType == 'H':
+            sendData = sensors[sensorNum].sample()['humidity']
+
+        # send data if it was a valid request
+        if sendData != '*':
+            try:
+                # add terminators so StreamDevice understands us
+                conn.sendall(str(sendData) + "\r\n")
+            except error:
+                # broken pipe; break connection
+                #print("Broken pipe; disconnecting from " + str(addr))
+                connected = False
+                conn.close()
