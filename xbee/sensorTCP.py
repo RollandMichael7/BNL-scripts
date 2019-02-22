@@ -27,7 +27,7 @@
 
 """\
     
-    XBee server for sending L/T/H sensor data when requested
+    XBee server for sending L/T/H sensor data over TCP connection when requested
     
 """
 
@@ -45,7 +45,7 @@ sensors = [xbeelib.xbeelt.XBeeLTN(addr) for addr in sensor_addresses]
 
 # Setup socket
 host = ''
-port = 13000
+port = 12000
 TCPSock = socket(AF_INET, SOCK_STREAM)
 TCPSock.bind((host, port))
 
@@ -71,18 +71,27 @@ while True:
             connected = False
             conn.close()
     elif len(data) > 1:
+        getID = False
+        if data[:2] == "ID":
+            getID = True
+
         # check for bad requests
-        dataType = data[0]
         try:
-            sensorNum = int(data[1:])
-        except ValueError:
+            if getID:
+                sensorNum = int(data[2:])
+            else:
+                sensorNum = int(data[1:])
+        except (ValueError, IndexError):
             continue 
         if sensorNum >= len(sensors):
             continue   
 
         # Get only the requested data     
+        dataType = data[0]
         sendData = '*'
-        if dataType == 'L':
+        if getID:
+            sendData = sensor_addresses[sensorNum]
+        elif dataType == 'L':
             sendData = sensors[sensorNum].sample()['light']
         elif dataType == 'T':
             sendData = sensors[sensorNum].sample()['temperature']
