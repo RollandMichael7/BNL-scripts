@@ -14,8 +14,9 @@ from socket import *
 # 	    print("Received message: " + data)
 
 def sendLoop():
-	host = "10.10.192.18"
-	port = 13000
+	#host = "10.10.192.18"
+	host = "localhost"
+	port = 12000
 	TCPSock = socket(AF_INET, SOCK_STREAM)
 	TCPSock.connect((host, port))
 	try:
